@@ -9,15 +9,12 @@ var canvas = canvasElement.get(0).getContext("2d");
 canvasElement.appendTo('body');
 
 
-
-
-
-
 function Grid( width, height, minDistance ){
 	this.width = width;
 	this.height = height;
 	this.minDistance = minDistance;
 	this.cellSize = this.minDistance / Math.SQRT2;
+	console.log( this.cellSize );
 
 	this.cellsWide = Math.ceil( this.width / this.cellSize );
 	this.cellsHigh = Math.ceil( this.height / this.cellSize );
@@ -25,12 +22,34 @@ function Grid( width, height, minDistance ){
 	// Initialize grid
 	this.grid = [];
 	for ( var x = 0; x < this.cellsWide; x++ ){
-		this.grid[x] = []
+		this.grid[x] = [];
 		for ( var y = 0; y < this.cellsHigh; y++ ){
 			this.grid[x][y] = null;
 		}
 	}
 }
+
+Grid.prototype.pixelsToGridCoords = function( point ){
+	var gridX = Math.floor( point.x / this.cellSize );
+	var gridY = Math.floor( point.y / this.cellSize );
+	return [ gridX, gridY ];
+}
+
+Grid.prototype.randomPoint = function(){
+	return { x: getRandomArbitrary(0,this.width), y: getRandomArbitrary(0,this.height) };
+}
+
+
+Grid.prototype.drawPoint = function( point, color, canvas ){
+	// Default color
+	color =  color || '#aaa';
+	// Draw a circle
+	canvas.beginPath();
+	canvas.arc( point.x, point.y, this.minDistance, 0, 2 * Math.PI, false);
+	canvas.fillStyle = color;
+	canvas.fill();
+}
+
 
 Grid.prototype.drawGrid = function( canvas ){
 
@@ -65,7 +84,7 @@ Grid.prototype.drawGrid = function( canvas ){
 
 
 function RandomQueue( a ){
-	this.queue = a;
+	this.queue = a || new Array();
 }
 
 RandomQueue.prototype.push = function( element ){
@@ -91,20 +110,35 @@ Array.prototype.remove = function(from, to) {
 	return this.push.apply(this, rest);
 };
 
+// MDN Random Number Functions
+// https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Math/random
+function getRandomArbitrary(min, max) {
+	return Math.random() * (max - min) + min;
+}
+
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 
-var demo = new Grid( CANVAS_WIDTH, CANVAS_HEIGHT, 20 );
+var demo = new Grid( CANVAS_WIDTH, CANVAS_HEIGHT, 40 );
 demo.drawGrid( canvas );
 
 var rq = new RandomQueue( [1,2,3,4,5,6,7,8,9] );
 console.log( rq.pop() );
 console.log( rq.pop() );
 console.log( rq.pop() );
-console.log( rq.pop() );
-console.log( rq.pop() );
-console.log( rq.pop() );
-console.log( rq.pop() );
 console.log( rq.queue );
+
+
+for( var i = 0; i < 30; i++ ){
+	point = demo.randomPoint();
+	demo.drawPoint( point, null, canvas );
+}
+
+
+
+
+
+
+
