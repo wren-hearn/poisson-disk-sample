@@ -176,7 +176,7 @@ Grid.prototype.drawPoint = function( point, color, canvas ){
 
 Grid.prototype.drawGrid = function( canvas ){
 
-	canvas.lineWidth = 0.2;
+	canvas.lineWidth = 0.05;
 	canvas.strokeStyle = 'black';
 
 	// Borders
