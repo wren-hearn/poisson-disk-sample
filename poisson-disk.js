@@ -1,7 +1,7 @@
 
 // Constants
-var	  CANVAS_WIDTH = 700
-	, CANVAS_HEIGHT = 500;
+var	  CANVAS_WIDTH = 1200
+	, CANVAS_HEIGHT = 700;
 
 // Add canvas to page
 var canvasElement = $("<canvas width='" + CANVAS_WIDTH + "' height='" + CANVAS_HEIGHT + "'></canvas>");
@@ -13,21 +13,49 @@ function PoissonDiskSampler( width, height, minDistance, sampleFrequency ){
 	this.grid = new Grid( width, height, minDistance );
 	this.outputList = new Array();
 	this.processingQueue = new RandomQueue();
+	this.sampleFrequency = sampleFrequency;
+}
 
-	// Generate first point
-	this.queueToAll( this.grid.randomPoint() );
+PoissonDiskSampler.prototype.sample = function(){
 
+	// If this is the first sample
+	if ( 0 == this.outputList.length){
+		// Generate first point
+		this.queueToAll( this.grid.randomPoint() );
+		return true;
+	}
+
+	var processPoint = this.processingQueue.pop();
+
+	// Processing queue is empty, return failure
+	if ( processPoint == null )
+		return false;
+
+	// Generate sample points around the processing point
+	// And check if they have any neighbors on the grid
+	// If not, add them to the queues
+	for ( var i = 0; i < this.sampleFrequency; i++ ){
+		samplePoint = this.grid.randomPointAround( processPoint );
+		if ( ! this.grid.inNeighborhood( samplePoint ) ){
+			// No on in neighborhood, welcome to the club
+			this.queueToAll( samplePoint );
+		}
+	}
+	// Sample successful since the processing queue isn't empty
+	return true;
 }
 
 PoissonDiskSampler.prototype.queueToAll = function ( point ){
+	var valid = this.grid.addPointToGrid( point, this.grid.pixelsToGridCoords( point ) );
+	if ( ! valid )
+		return;
 	this.processingQueue.push( point );
 	this.outputList.push( point );
-	this.grid.addPointToGrid( point, this.grid.pixelsToGridCoords( point ) );
 }
 
 PoissonDiskSampler.prototype.drawOutputList = function( canvas ){
 	for ( var i = 0; i < this.outputList.length; i++ ){
-		this.grid.drawPoint( this.outputList[ i ], "#aaa", canvas );
+		this.grid.drawPoint( this.outputList[ i ], "#444", canvas );
 	}
 }
 
@@ -38,7 +66,8 @@ function Grid( width, height, minDistance ){
 	this.height = height;
 	this.minDistance = minDistance;
 	this.cellSize = this.minDistance / Math.SQRT2;
-	console.log( this.cellSize );
+	//console.log( this.cellSize );
+	this.pointSize = 2;
 
 	this.cellsWide = Math.ceil( this.width / this.cellSize );
 	this.cellsHigh = Math.ceil( this.height / this.cellSize );
@@ -60,7 +89,14 @@ Grid.prototype.pixelsToGridCoords = function( point ){
 }
 
 Grid.prototype.addPointToGrid = function( pointCoords, gridCoords ){
+	// Check that the coordinate makes sense
+	if ( gridCoords.x < 0 || gridCoords.x > this.grid.length - 1 )
+		return false;
+	if ( gridCoords.y < 0 || gridCoords.y > this.grid[gridCoords.x].length - 1 )
+		return false;
 	this.grid[ gridCoords.x ][ gridCoords.y ] = pointCoords;
+	console.log( "Adding ("+pointCoords.x+","+pointCoords.y+" to grid ["+gridCoords.x+","+gridCoords.y+"]" );
+	return true;
 }
 
 Grid.prototype.randomPoint = function(){
@@ -83,7 +119,7 @@ Grid.prototype.randomPointAround = function( point ){
 Grid.prototype.inNeighborhood = function( point ){
 	var gridPoint = this.pixelsToGridCoords( point );
 
-	// TODO cells around point
+	var cellsAroundPoint = this.cellsAroundPoint( point );
 
 	for ( var i = 0; i < cellsAroundPoint.length; i++ ){
 		if ( cellsAroundPoint[i] != null ){
@@ -93,22 +129,36 @@ Grid.prototype.inNeighborhood = function( point ){
 		}
 	}
 	return false;
-
-/*
-  //get the neighbourhood if the point in the grid
-  cellsAroundPoint = squareAroundPoint(grid, gridPoint, 5)
-  for every cell in cellsAroundPoint
-    if (cell != null)
-      if distance(cell, point) < mindist
-        return true
-  return false
-*/
-
 }
 
-Grid.prototype.calcDistnce = function( pointInCell, point ){
-	return (point.x - pointInCell.x)*(point.x - pointInCell.x)
-	     + (point.y - pointInCell.y)*(point.y - pointInCell.y)
+Grid.prototype.cellsAroundPoint = function( point ){
+	var gridCoords = this.pixelsToGridCoords( point );
+	var neighbors = new Array();
+
+	for ( var x = -2; x < 3; x++ ){
+		var targetX = gridCoords.x + x;
+		// make sure lowerbound and upperbound make sense
+		if ( targetX < 0 )
+			targetX = 0;
+		if ( targetX > this.grid.length - 1 )
+			targetX = this.grid.length - 1;
+
+		for ( var y = -2; y < 3; y++ ){
+			var targetY = gridCoords.y + y;
+			// make sure lowerbound and upperbound make sense
+			if ( targetY < 0 )
+				targetY = 0;
+			if ( targetY > this.grid[ targetX ].length - 1 )
+				targetY = this.grid[ targetX ].length - 1;
+			neighbors.push( this.grid[ targetX ][ targetY ] )
+		}
+	}
+	return neighbors;
+}
+
+Grid.prototype.calcDistance = function( pointInCell, point ){
+	return Math.sqrt( (point.x - pointInCell.x)*(point.x - pointInCell.x)
+	                + (point.y - pointInCell.y)*(point.y - pointInCell.y) );
 }
 
 
@@ -117,7 +167,8 @@ Grid.prototype.drawPoint = function( point, color, canvas ){
 	color =  color || '#aaa';
 	// Draw a circle
 	canvas.beginPath();
-	canvas.arc( point.x, point.y, 3, 0, 2 * Math.PI, false);
+	// arc(x, y, radius, startAngle, endAngle, anticlockwise)
+	canvas.arc( point.x, point.y, this.pointSize, 0, 2 * Math.PI, false);
 	canvas.fillStyle = color;
 	canvas.fill();
 }
@@ -167,6 +218,16 @@ RandomQueue.prototype.pop = function(){
 
 	randomIndex = getRandomInt( 0, this.queue.length );
 	while( this.queue[randomIndex] === undefined ){
+
+		// Check if the queue is empty
+		var empty = true;
+		for ( var i = 0; i < this.queue.length; i++ ){
+			if ( this.queue[i] !== undefined )
+				empty = false;
+		}
+		if ( empty )
+			return null;
+
 		randomIndex = getRandomInt( 0, this.queue.length );
 	}
 
@@ -200,13 +261,21 @@ for( var i = 0; i < 30; i++ ){
 }
 */
 
-var sampler = new PoissonDiskSampler( CANVAS_WIDTH, CANVAS_HEIGHT, 40, 30 );
+var sampler = new PoissonDiskSampler( CANVAS_WIDTH, CANVAS_HEIGHT, 30, 30 );
 sampler.grid.drawGrid( canvas );
 
-for ( var i = 0; i < 30; i++ ){
-	sampler.outputList.push( sampler.grid.randomPointAround(sampler.outputList[0]) );
-}
-sampler.drawOutputList( canvas );
+
+// Game loop
+var timer = setInterval( function(){
+	if ( ! sampler.sample() ){
+		console.log( "Done. "+sampler.outputList.length+" points found...like a boss." );
+		clearInterval( timer );
+	}
+	sampler.drawOutputList( canvas );
+
+}, 1);
+
+//sampler.drawOutputList( canvas );
 
 
 console.log( sampler );
