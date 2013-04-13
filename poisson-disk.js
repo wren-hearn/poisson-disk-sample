@@ -253,19 +253,11 @@ function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-
-/*
-for( var i = 0; i < 30; i++ ){
-	point = demo.randomPoint();
-	demo.drawPoint( point, null, canvas );
-}
-*/
-
 var sampler = new PoissonDiskSampler( CANVAS_WIDTH, CANVAS_HEIGHT, 30, 30 );
 sampler.grid.drawGrid( canvas );
 
 
-// Game loop
+// Render loop
 var timer = setInterval( function(){
 	if ( ! sampler.sample() ){
 		console.log( "Done. "+sampler.outputList.length+" points found...like a boss." );
@@ -274,11 +266,3 @@ var timer = setInterval( function(){
 	sampler.drawOutputList( canvas );
 
 }, 1);
-
-//sampler.drawOutputList( canvas );
-
-
-console.log( sampler );
-
-
-
