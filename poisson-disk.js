@@ -1,3 +1,10 @@
+/*
+poisson-disk-sample
+
+https://github.com/jeffrey-hearn/poisson-disk-sample
+
+MIT License
+*/
 
 function PoissonDiskSampler( width, height, minDistance, sampleFrequency ){
 	this.width = width;
