@@ -98,7 +98,7 @@ Grid.prototype.addPointToGrid = function( pointCoords, gridCoords ){
 	if ( gridCoords.y < 0 || gridCoords.y > this.grid[gridCoords.x].length - 1 )
 		return false;
 	this.grid[ gridCoords.x ][ gridCoords.y ] = pointCoords;
-	console.log( "Adding ("+pointCoords.x+","+pointCoords.y+" to grid ["+gridCoords.x+","+gridCoords.y+"]" );
+	//console.log( "Adding ("+pointCoords.x+","+pointCoords.y+" to grid ["+gridCoords.x+","+gridCoords.y+"]" );
 	return true;
 }
 
